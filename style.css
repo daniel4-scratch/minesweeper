@@ -1,0 +1,65 @@
+#field
+{
+    display: grid;
+    grid-template-columns: repeat(10, calc(16px * var(--scale)));
+    grid-template-rows: repeat(10, calc(16px * var(--scale)));
+    gap: 0px;
+    --scale:1;
+}
+
+.mine{
+    border:none;
+    flex-wrap: 1;
+    width: calc(16px * var(--scale));
+    height: calc(16px * var(--scale));
+    background-size: calc(144px * var(--scale)) auto; /* width of your sprite sheet */
+    background-image: url('sprite.png');
+    background-repeat: no-repeat;
+    background-position: calc(0px * var(--scale)) calc(-39px * var(--scale));
+    image-rendering: pixelated;
+}
+
+.mine:active{
+    background-position: calc(0px * var(--scale)) calc(-23px * var(--scale));
+}
+.mine.empty{
+    background-position: calc(0px * var(--scale)) calc(-23px * var(--scale));
+}
+
+.mine.flagged{
+    background-position: calc(-16px * var(--scale)) calc(-39px * var(--scale));
+}
+.mine.hit{
+    background-position: calc(-32px * var(--scale)) calc(-39px * var(--scale));
+}
+.mine.falseflag{
+    background-position: calc(-48px * var(--scale)) calc(-39px * var(--scale));
+}
+.mine.revealed{
+    background-position: calc(-64px * var(--scale)) calc(-39px * var(--scale));
+}
+
+.mine.number1{
+    background-position: calc(-16px * var(--scale)) calc(-23px * var(--scale));
+}
+.mine.number2{
+    background-position: calc(-32px * var(--scale)) calc(-23px * var(--scale));
+}
+.mine.number3{
+    background-position: calc(-48px * var(--scale)) calc(-23px * var(--scale));
+}
+.mine.number4{
+    background-position: calc(-64px * var(--scale)) calc(-23px * var(--scale));
+}
+.mine.number5{
+    background-position: calc(-80px * var(--scale)) calc(-23px * var(--scale));
+}
+.mine.number6{
+    background-position: calc(-96px * var(--scale)) calc(-23px * var(--scale));
+}
+.mine.number7{
+    background-position: calc(-112px * var(--scale)) calc(-23px * var(--scale));
+}
+.mine.number8{
+    background-position: calc(-128px * var(--scale)) calc(-23px * var(--scale));
+}
