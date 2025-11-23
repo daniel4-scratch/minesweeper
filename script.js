@@ -9,6 +9,8 @@ const field = document.getElementById("field");
 function startGame() {
     new Audio('sounds/start.wav').play();
     field.innerHTML = "";
+    field.style.gridTemplateRows = `repeat(${gridY}, calc(16px * var(--scale)))`;
+    field.style.gridTemplateColumns = `repeat(${gridX}, calc(16px * var(--scale)))`;
     mines = {};
     for (var i = 0; i < gridY; i++) {
         for (var j = 0; j < gridX; j++) {
@@ -31,9 +33,38 @@ document.getElementById("startBtn").addEventListener("click", function () {
 
 document.getElementById("scale").addEventListener("input", function (e) {
     var scale = parseFloat(e.target.value);
-    document.getElementById("field").style.setProperty('--scale', scale);
+    //edit --scale in :root
+    document.documentElement.style.setProperty('--scale', scale);
+});
+document.getElementById("imageRendering").addEventListener("change", function (e) {
+    var smooth = e.target.checked;
+    if (smooth) {
+        document.documentElement.style.setProperty('--image-rendering', 'smooth');
+    } else {
+        document.documentElement.style.setProperty('--image-rendering', 'pixelated');
+    }
 });
 
+document.getElementById("mineChance").addEventListener("input", function (e) {
+    minePercent = parseFloat(e.target.value);
+});
+document.getElementById("width").addEventListener("input", function (e) {
+    gridX = parseInt(e.target.value);
+});
+document.getElementById("height").addEventListener("input", function (e) {
+    gridY = parseInt(e.target.value);
+});
+//select element
+document.getElementById("theme").addEventListener("change", function () {
+    if (this.value === "classic") {
+        document.documentElement.style.setProperty('--sprite', "url('sprite.png')");
+        document.title = "Minesweeper";
+    } else if (this.value === "bruce") {
+        document.documentElement.style.setProperty('--sprite', "url('brucesweeper.png')");
+        document.title = "Brucesweeper";
+    }
+
+});
 //when button pressed
 field.addEventListener("click", function (e) {
     if (e.target && e.target.className.startsWith("mine") && !e.target.className.includes("flagged")) {

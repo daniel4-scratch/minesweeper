@@ -1,10 +1,36 @@
+:root{
+    --scale:1;
+    --sprite: url('sprite.png');
+    --image-rendering: pixelated;
+}
+
+.window{
+    background-color: #c2c2c2;
+}
+
 #field
 {
     display: grid;
     grid-template-columns: repeat(10, calc(16px * var(--scale)));
     grid-template-rows: repeat(10, calc(16px * var(--scale)));
     gap: 0px;
-    --scale:1;
+    width: fit-content;
+}
+
+.smile{
+    border:none;
+    width: calc(26px * var(--scale));
+    height: calc(26px * var(--scale));
+    background-size: calc(144px * var(--scale)) auto; /* width of your sprite sheet */
+    background-image: var(--sprite);
+    background-repeat: no-repeat;
+    background-position: calc(0px * var(--scale)) calc(-55px * var(--scale));
+    image-rendering: var(--image-rendering);
+}
+
+/*when mine is pressed change smile to shocked*/
+.smile:active{
+    background-position: calc(-26px * var(--scale)) calc(-55px * var(--scale));
 }
 
 .mine{
@@ -13,10 +39,10 @@
     width: calc(16px * var(--scale));
     height: calc(16px * var(--scale));
     background-size: calc(144px * var(--scale)) auto; /* width of your sprite sheet */
-    background-image: url('sprite.png');
+    background-image: var(--sprite);
     background-repeat: no-repeat;
     background-position: calc(0px * var(--scale)) calc(-39px * var(--scale));
-    image-rendering: pixelated;
+    image-rendering: var(--image-rendering);
 }
 
 .mine:active{

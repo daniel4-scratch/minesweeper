@@ -8,9 +8,30 @@
 </head>
 <body>
     <button id="startBtn">Start Game</button>
+
+    <label for="width">Width:</label>
+    <input type="number" id="width" placeholder="Width" min="5" max="50" value="10" autocomplete="off" />
+    <label for="height">Height:</label>
+    <input type="number" id="height" placeholder="Height" min="5" max="50" value="10" autocomplete="off" />
+    <label for="mineChance">Mines Chance:</label>
+    <input type="number" id="mineChance" placeholder="Mines Chance" min="0" max="1" step="0.01" value="0.15" autocomplete="off" />
+    <br>
     <label for="scale">Scale:</label>
-    <input type="number" id="scale" placeholder="Scale" min="1" max="10" value="1" />
-    <div id="field"></div>
+    <input type="number" id="scale" placeholder="Scale" min="1" max="10" value="1" autocomplete="off" />
+
+    <label for="imageRendering">Smooth Rendering:</label>
+    <input type="checkbox" id="imageRendering" autocomplete="off"/>
+
+    <label for="theme">Theme:</label>
+    <select id="theme" autocomplete="off">
+        <option value="classic">Classic</option>
+        <option value="bruce">Bruce</option>
+    </select>
+
+    <div class="window">
+        <button class="smile" id="smile"></button>
+        <div id="field"></div>
+    </div>
 </body>
 <script src="script.js"></script>
 </html>
