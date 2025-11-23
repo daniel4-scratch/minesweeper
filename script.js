@@ -7,6 +7,27 @@ var mineCount = 15;
 
 const field = document.getElementById("field");
 
+const params = new Proxy(new URLSearchParams(window.location.search), {
+  get: (searchParams, prop) => searchParams.get(prop),
+});
+
+let value = params.theme;
+console.log("Theme param:", value);
+if (value === "classic" || value === "bruce") {
+    document.getElementById("theme").value = value;
+    document.getElementById("theme").dispatchEvent(new Event('change'));
+    //apply theme
+    if (value === "classic") {
+        document.documentElement.style.setProperty('--sprite', "url('sprite.png')");
+        document.title = "Minesweeper";
+    } else if (value === "bruce") {
+        document.documentElement.style.setProperty('--sprite', "url('brucesweeper.png')");
+        document.title = "Brucesweeper";
+    }
+    
+}
+
+
 function startGame() {
     new Audio('sounds/start.wav').play();
     field.innerHTML = "";
