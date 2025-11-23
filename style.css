@@ -1,5 +1,5 @@
 :root{
-    --scale:1;
+    --scale:2;
     --sprite: url('sprite.png');
     --image-rendering: pixelated;
 }
