@@ -135,6 +135,14 @@ document.getElementById("imageRendering").addEventListener("change", function (e
         document.documentElement.style.setProperty('--image-rendering', 'pixelated');
     }
 });
+document.getElementById("cursorEvents").addEventListener("change", function (e) {
+    var pointer = e.target.checked;
+    if (pointer) {
+        document.documentElement.style.setProperty('--cursor', 'pointer');
+    } else {
+        document.documentElement.style.setProperty('--cursor', 'default');
+    }
+});
 
 // mine count input
 var mineCountInput = document.getElementById("mineCount");

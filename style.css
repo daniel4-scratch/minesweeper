@@ -2,6 +2,7 @@
     --scale:2;
     --sprite: url('sprite.png');
     --image-rendering: pixelated;
+    --cursor: default;
 }
 
 .window{
@@ -43,6 +44,7 @@
     background-repeat: no-repeat;
     background-position: calc(0px * var(--scale)) calc(-39px * var(--scale));
     image-rendering: var(--image-rendering);
+    cursor: var(--cursor);
 }
 
 .mine:active{
@@ -50,42 +52,55 @@
 }
 .mine.empty{
     background-position: calc(0px * var(--scale)) calc(-23px * var(--scale));
+    cursor: default;
 }
 
 .mine.flagged{
     background-position: calc(-16px * var(--scale)) calc(-39px * var(--scale));
+    cursor:default;
 }
 .mine.hit{
     background-position: calc(-32px * var(--scale)) calc(-39px * var(--scale));
+    cursor: default;
 }
 .mine.falseflag{
     background-position: calc(-48px * var(--scale)) calc(-39px * var(--scale));
+    cursor: default;
 }
 .mine.revealed{
     background-position: calc(-64px * var(--scale)) calc(-39px * var(--scale));
+    cursor: default;
 }
 
 .mine.number1{
     background-position: calc(-16px * var(--scale)) calc(-23px * var(--scale));
+    cursor: default;
 }
 .mine.number2{
     background-position: calc(-32px * var(--scale)) calc(-23px * var(--scale));
+    cursor: default;
 }
 .mine.number3{
     background-position: calc(-48px * var(--scale)) calc(-23px * var(--scale));
+    cursor: default;
 }
 .mine.number4{
     background-position: calc(-64px * var(--scale)) calc(-23px * var(--scale));
+    cursor: default;
 }
 .mine.number5{
     background-position: calc(-80px * var(--scale)) calc(-23px * var(--scale));
+    cursor: default;
 }
 .mine.number6{
     background-position: calc(-96px * var(--scale)) calc(-23px * var(--scale));
+    cursor: default;
 }
 .mine.number7{
     background-position: calc(-112px * var(--scale)) calc(-23px * var(--scale));
+    cursor: default;
 }
 .mine.number8{
     background-position: calc(-128px * var(--scale)) calc(-23px * var(--scale));
+    cursor: default;
 }
