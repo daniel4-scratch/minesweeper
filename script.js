@@ -2,7 +2,8 @@ var gridX = 10;
 var gridY = 10;
 var mines = {};
 
-var minePercent = 0.15;
+// number of mines to place (fixed count)
+var mineCount = 15;
 
 const field = document.getElementById("field");
 
@@ -12,19 +13,88 @@ function startGame() {
     field.style.gridTemplateRows = `repeat(${gridY}, calc(16px * var(--scale)))`;
     field.style.gridTemplateColumns = `repeat(${gridX}, calc(16px * var(--scale)))`;
     mines = {};
+    // create grid buttons first
     for (var i = 0; i < gridY; i++) {
         for (var j = 0; j < gridX; j++) {
             var button = document.createElement("button");
             button.id = "mine_" + i + "_" + j;
             button.className = "mine";
-            if (Math.random() < minePercent) {
-                mines[button.id] = true;
-            }
             field.appendChild(button);
+        }
+    }
+
+    // place an exact number of mines randomly
+    var totalCells = gridX * gridY;
+    // ensure at least one non-mine cell remains
+    var placeCount = Math.max(0, Math.min(mineCount, totalCells - 1));
+    var placed = 0;
+    while (placed < placeCount) {
+        var idx = Math.floor(Math.random() * totalCells);
+        var rx = Math.floor(idx / gridX);
+        var ry = idx % gridX;
+        var id = "mine_" + rx + "_" + ry;
+        if (!mines[id]) {
+            mines[id] = true;
+            placed++;
         }
     }
     console.log(mines)
 };
+
+// reveal all connected empty areas and their bordering numbers
+function revealArea(startX, startY) {
+    var startId = "mine_" + startX + "_" + startY;
+    var startBtn = document.getElementById(startId);
+    if (!startBtn || startBtn.disabled || startBtn.className.includes("flagged")) return;
+
+    var visited = {};
+    var queue = [{ x: startX, y: startY }];
+    visited[startId] = true;
+
+    while (queue.length) {
+        var cur = queue.shift();
+        var bx = cur.x;
+        var by = cur.y;
+        var id = "mine_" + bx + "_" + by;
+        var btn = document.getElementById(id);
+        if (!btn || btn.disabled) continue;
+
+        // count neighboring mines
+        var mineCount = 0;
+        for (var i = -1; i <= 1; i++) {
+            for (var j = -1; j <= 1; j++) {
+                if (i === 0 && j === 0) continue;
+                var checkId = "mine_" + (bx + i) + "_" + (by + j);
+                if (mines[checkId]) mineCount++;
+            }
+        }
+
+        // reveal this button
+        if (mineCount > 0) {
+            btn.className += " number" + mineCount;
+            btn.disabled = true;
+            // do not expand from numbered cells
+        } else {
+            btn.className += " empty";
+            btn.disabled = true;
+            // expand neighbors
+            for (var i = -1; i <= 1; i++) {
+                for (var j = -1; j <= 1; j++) {
+                    if (i === 0 && j === 0) continue;
+                    var nx = bx + i;
+                    var ny = by + j;
+                    var nid = "mine_" + nx + "_" + ny;
+                    if (visited[nid]) continue;
+                    var nbtn = document.getElementById(nid);
+                    if (nbtn && !nbtn.disabled && !nbtn.className.includes("flagged")) {
+                        visited[nid] = true;
+                        queue.push({ x: nx, y: ny });
+                    }
+                }
+            }
+        }
+    }
+}
 
 
 document.getElementById("startBtn").addEventListener("click", function () {
@@ -45,9 +115,14 @@ document.getElementById("imageRendering").addEventListener("change", function (e
     }
 });
 
-document.getElementById("mineChance").addEventListener("input", function (e) {
-    minePercent = parseFloat(e.target.value);
-});
+// mine count input
+var mineCountInput = document.getElementById("mineCount");
+if (mineCountInput) {
+    mineCountInput.addEventListener("input", function (e) {
+        var v = parseInt(e.target.value);
+        if (!isNaN(v)) mineCount = v;
+    });
+}
 document.getElementById("width").addEventListener("input", function (e) {
     gridX = parseInt(e.target.value);
 });
@@ -97,40 +172,12 @@ field.addEventListener("click", function (e) {
             }
 
         } else {
-            //reveal logic
-            e.target.disabled = true;
-            e.target.className += " empty";
-
+            // reveal using BFS flood-fill to make sure all contiguous empty
+            // areas and their border numbers get revealed.
             var coords = e.target.id.split("_");
             var x = parseInt(coords[1]);
             var y = parseInt(coords[2]);
-
-            var mineCount = 0;
-            for (var i = -1; i <= 1; i++) {
-                for (var j = -1; j <= 1; j++) {
-                    if (i == 0 && j == 0) continue;
-                    var checkId = "mine_" + (x + i) + "_" + (y + j);
-                    if (mines[checkId]) {
-                        mineCount++;
-                    }
-                }
-            }
-            if (mineCount > 0) {
-                e.target.className += " number" + mineCount;
-            } else {
-                //reveal surrounding buttons
-                for (var i = -1; i <= 1; i++) {
-                    for (var j = -1; j <= 1; j++) {
-                        if (i == 0 && j == 0) continue;
-                        var checkId = "mine_" + (x + i) + "_" + (y + j);
-                        var checkButton = document.getElementById(checkId);
-                        if (checkButton && !checkButton.disabled) {
-                            checkButton.click();
-                        }
-                    }
-                }
-            }
-
+            revealArea(x, y);
         }
     }
     // win condition; check if every empty slot is revealed
