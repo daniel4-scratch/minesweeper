@@ -3,7 +3,7 @@ var gridY = 10;
 var mines = {};
 
 // number of mines to place (fixed count)
-var mineCount = 15;
+var mineCount = 10;
 
 const field = document.getElementById("field");
 
