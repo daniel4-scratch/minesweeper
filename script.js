@@ -7,6 +7,40 @@ var mineCount = 10;
 
 const field = document.getElementById("field");
 
+// press/hold handling for flagging (mobile and mouse)
+var pressTimer = null;
+var pressTarget = null;
+var pressDelay = 250; // ms to consider a hold
+
+function startPress(target) {
+    cancelPress();
+    pressTarget = target;
+    pressTimer = setTimeout(function () {
+        if (!pressTarget) return;
+        // only act on mine buttons that are not disabled
+        if (!pressTarget.className || !pressTarget.className.startsWith("mine")) return;
+        if (pressTarget.disabled) return;
+        // toggle flag
+        if (pressTarget.className.includes("flagged")) {
+            pressTarget.className = pressTarget.className.replace(" flagged", "");
+        } else {
+            pressTarget.className += " flagged";
+        }
+        // mark to suppress the following click (synthesized on some platforms)
+        try { pressTarget._suppressClick = true; } catch (e) { }
+        // clear timer/target after action
+        cancelPress();
+    }, pressDelay);
+}
+
+function cancelPress() {
+    if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+    }
+    pressTarget = null;
+}
+
 const params = new Proxy(new URLSearchParams(window.location.search), {
   get: (searchParams, prop) => searchParams.get(prop),
 });
@@ -163,7 +197,75 @@ document.getElementById("theme").addEventListener("change", function () {
 });
 //when button pressed
 field.addEventListener("click", function (e) {
+    // if this target was just flagged by a hold, suppress the synthesized click
+    if (e.target && e.target._suppressClick) {
+        try { delete e.target._suppressClick; } catch (err) { e.target._suppressClick = false; }
+        return;
+    }
+
     if (e.target && e.target.className.startsWith("mine") && !e.target.className.includes("flagged")) {
+        // chording: if this is a revealed numbered cell and the number of
+        // adjacent flags equals the number, reveal all unflagged neighbors.
+        var numMatch = e.target.className.match(/number(\d+)/);
+        if (numMatch) {
+            var required = parseInt(numMatch[1], 10);
+            var coords = e.target.id.split("_");
+            var cx = parseInt(coords[1], 10);
+            var cy = parseInt(coords[2], 10);
+            var flagCount = 0;
+            for (var i = -1; i <= 1; i++) {
+                for (var j = -1; j <= 1; j++) {
+                    if (i === 0 && j === 0) continue;
+                    var checkId = "mine_" + (cx + i) + "_" + (cy + j);
+                    var btn = document.getElementById(checkId);
+                    if (btn && btn.className.includes("flagged")) flagCount++;
+                }
+            }
+            if (flagCount === required) {
+                // reveal neighbors not flagged
+                for (var i = -1; i <= 1; i++) {
+                    for (var j = -1; j <= 1; j++) {
+                        if (i === 0 && j === 0) continue;
+                        var nx = cx + i;
+                        var ny = cy + j;
+                        var nid = "mine_" + nx + "_" + ny;
+                        var nbtn = document.getElementById(nid);
+                        if (!nbtn || nbtn.disabled || nbtn.className.includes("flagged")) continue;
+                        // if it's a mine, trigger loss
+                        if (mines[nid]) {
+                            var audio = new Audio('sounds/lose_minesweeper.wav');
+                            audio.play();
+                            nbtn.className += " hit";
+                            // disable all buttons
+                            var allButtons = document.getElementsByClassName("mine");
+                            for (var bi = 0; bi < allButtons.length; bi++) {
+                                allButtons[bi].disabled = true;
+                            }
+                            for (var key in mines) {
+                                var mineButton = document.getElementById(key);
+                                if (mineButton && !mineButton.className.includes("flagged") && key !== nid) {
+                                    mineButton.className += " revealed";
+                                }
+                            }
+                            // mark false flagged buttons
+                            var allButtons2 = document.getElementsByClassName("mine");
+                            for (var bi2 = 0; bi2 < allButtons2.length; bi2++) {
+                                var btn2 = allButtons2[bi2];
+                                if (!mines[btn2.id] && btn2.className.includes("flagged")) {
+                                    btn2.className += " falseflag";
+                                }
+                            }
+                            return;
+                        } else {
+                            // safe: reveal area (this will reveal numbers and expand empties)
+                            revealArea(nx, ny);
+                        }
+                    }
+                }
+                // after chording, return to avoid double-processing
+                return;
+            }
+        }
         if (e.isTrusted && !mines[e.target.id]) {
             var audio = new Audio('sounds/click.wav');
             audio.play();
@@ -244,3 +346,29 @@ field.addEventListener("contextmenu", function (e) {
         }
     }
 });
+
+// touch/mouse hold handling (delegated)
+// touchstart / mousedown: start timer
+// touchend / mouseup / touchmove / mouseleave: cancel timer
+field.addEventListener('touchstart', function (e) {
+    var t = e.target;
+    if (t && t.className && t.className.startsWith('mine')) {
+        // prevent the default long-press context menu on some browsers
+        e.preventDefault();
+        startPress(t);
+    }
+}, { passive: false });
+
+field.addEventListener('touchmove', function (e) { cancelPress(); }, { passive: true });
+field.addEventListener('touchcancel', function (e) { cancelPress(); }, { passive: true });
+field.addEventListener('touchend', function (e) { cancelPress(); }, { passive: true });
+
+// also support mouse hold for desktop
+field.addEventListener('mousedown', function (e) {
+    var t = e.target;
+    if (t && t.className && t.className.startsWith('mine')) {
+        startPress(t);
+    }
+});
+field.addEventListener('mouseup', function (e) { cancelPress(); });
+field.addEventListener('mouseleave', function (e) { cancelPress(); });
