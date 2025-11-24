@@ -209,92 +209,6 @@ document.getElementById("theme").addEventListener("change", function () {
 
 });
 
-// Export current game state to a JSON file
-function exportGame() {
-    var data = {
-        gridX: gridX,
-        gridY: gridY,
-        mineCount: mineCount,
-        mines: Object.keys(mines),
-        cells: []
-    };
-    var allButtons = document.getElementsByClassName("mine");
-    for (var i = 0; i < allButtons.length; i++) {
-        var btn = allButtons[i];
-        // Save only the extra classes besides the base 'mine'
-        var extras = btn.className.replace(/^mine/, '').trim();
-        data.cells.push({ id: btn.id, classes: extras, disabled: !!btn.disabled });
-    }
-    var json = JSON.stringify(data);
-    var blob = new Blob([json], { type: 'application/json' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'minesweeper_save.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-// Import a game object (or JSON string) and apply it to the board
-function importGameFromObject(data) {
-    try {
-        if (typeof data === 'string') data = JSON.parse(data);
-    } catch (err) {
-        alert('Failed to parse save data');
-        return;
-    }
-    // Apply grid settings if present
-    gridX = (typeof data.gridX === 'number') ? data.gridX : gridX;
-    gridY = (typeof data.gridY === 'number') ? data.gridY : gridY;
-    mineCount = (typeof data.mineCount === 'number') ? data.mineCount : mineCount;
-
-    // Recreate board to match dimensions
-    startGame();
-
-    // Overwrite mines mapping with saved mines
-    mines = {};
-    if (Array.isArray(data.mines)) {
-        data.mines.forEach(function (id) { mines[id] = true; });
-    }
-
-    // Apply saved cell states
-    if (Array.isArray(data.cells)) {
-        data.cells.forEach(function (c) {
-            var btn = document.getElementById(c.id);
-            if (!btn) return;
-            var extras = c.classes || '';
-            btn.className = 'mine' + (extras ? ' ' + extras : '');
-            btn.disabled = !!c.disabled;
-        });
-    }
-}
-
-// Wire export/import UI elements
-var exportBtn = document.getElementById('exportBtn');
-var importBtn = document.getElementById('importBtn');
-var importFile = document.getElementById('importFile');
-if (exportBtn) exportBtn.addEventListener('click', function () { exportGame(); });
-if (importBtn) importBtn.addEventListener('click', function () { if (importFile) importFile.click(); });
-if (importFile) {
-    importFile.addEventListener('change', function (e) {
-        var file = e.target.files && e.target.files[0];
-        if (!file) return;
-        var reader = new FileReader();
-        reader.onload = function () {
-            try {
-                importGameFromObject(JSON.parse(reader.result));
-            } catch (err) {
-                alert('Invalid save file');
-            }
-            // Clear the input so same file can be reselected later
-            importFile.value = '';
-        };
-        reader.readAsText(file);
-    });
-}
-
 // Smiley control helper
 function setSmiley(state) {
     var smiley = document.getElementById('smiley');
@@ -488,3 +402,5 @@ function updateFlagsDisplay() {
     }
 
 }
+
+startGame();
