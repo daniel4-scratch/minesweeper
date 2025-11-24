@@ -2,6 +2,7 @@ var gridX = 10;
 var gridY = 10;
 var mines = {};
 var gameOver = true;
+var minesPlaced = false;
 var gameWon = false;
 
 // number of mines to place (fixed count)
@@ -39,6 +40,7 @@ function startGame() {
     field.style.gridTemplateRows = `repeat(${gridY}, calc(16px * var(--scale)))`;
     field.style.gridTemplateColumns = `repeat(${gridX}, calc(16px * var(--scale)))`;
     mines = {};
+    minesPlaced = false; // don't place mines until first click
     // create grid buttons first
     for (var i = 0; i < gridY; i++) {
         for (var j = 0; j < gridX; j++) {
@@ -48,26 +50,52 @@ function startGame() {
             field.appendChild(button);
         }
     }
+    updateFlagsDisplay();
+    // reset timer display to 000 (timer starts on first click)
+    renderTimerDigits(0);
+    console.log(mines)
+};
 
-    // place an exact number of mines randomly
+// Place mines randomly, excluding any ids in the excludeIds set/array
+function placeMines(excludeIds) {
+    var excludeSet = {};
+    if (Array.isArray(excludeIds)) {
+        excludeIds.forEach(function(id){ excludeSet[id] = true; });
+    }
     var totalCells = gridX * gridY;
-    // ensure at least one non-mine cell remains
-    var placeCount = Math.max(0, Math.min(mineCount, totalCells - 1));
+    var maxPlace = Math.max(0, Math.min(mineCount, totalCells - Object.keys(excludeSet).length - 1));
     var placed = 0;
-    while (placed < placeCount) {
+    // fallback: if exclude removes too many cells, allow placing up to totalCells-1
+    var attempts = 0;
+    while (placed < maxPlace && attempts < totalCells * 10) {
+        attempts++;
         var idx = Math.floor(Math.random() * totalCells);
         var rx = Math.floor(idx / gridX);
         var ry = idx % gridX;
         var id = "mine_" + rx + "_" + ry;
+        if (excludeSet[id]) continue;
         if (!mines[id]) {
             mines[id] = true;
             placed++;
         }
     }
-    updateFlagsDisplay();
-    startTimer();
-    console.log(mines)
-};
+    minesPlaced = true;
+}
+
+// helper: return array of ids for cell (x,y) and its neighbors inside grid
+function getExcludeNeighbors(x, y) {
+    var ids = [];
+    for (var i = -1; i <= 1; i++) {
+        for (var j = -1; j <= 1; j++) {
+            var nx = x + i;
+            var ny = y + j;
+            if (nx >= 0 && nx < gridY && ny >= 0 && ny < gridX) {
+                ids.push('mine_' + nx + '_' + ny);
+            }
+        }
+    }
+    return ids;
+}
 
 function startTimer(){
     var timerDisplay = document.getElementById("timerDisplay");
@@ -98,6 +126,20 @@ function stopTimer(){
     if (window.timerInterval) {
         clearInterval(window.timerInterval);
         window.timerInterval = null;
+    }
+}
+
+// Render timer digits without starting/stopping the interval
+function renderTimerDigits(seconds) {
+    var timerDisplay = document.getElementById("timerDisplay");
+    if (!timerDisplay) return;
+    var digits = (typeof seconds === 'number' ? seconds : 0).toString().padStart(3, '0');
+    timerDisplay.innerHTML = "";
+    for (var i = 0; i < digits.length; i++) {
+        var digit = digits.charAt(i);
+        var digitDiv = document.createElement("div");
+        digitDiv.className = "number" + digit;
+        timerDisplay.appendChild(digitDiv);
     }
 }
 
@@ -158,7 +200,33 @@ function revealArea(startX, startY) {
 
 
 document.getElementById("startBtn").addEventListener("click", function () {
+    // Apply settings from inputs but do not automatically start a new board.
+    var w = parseInt(document.getElementById('width').value);
+    var h = parseInt(document.getElementById('height').value);
+    var m = parseInt(document.getElementById('mineCount').value);
+    if (!isNaN(w) && w > 0) gridX = w;
+    if (!isNaN(h) && h > 0) gridY = h;
+    if (!isNaN(m) && m >= 0) mineCount = m;
+
+    // End any running game: stop timer and mark game over
+    stopTimer();
+    gameOver = true;
+    gameWon = false;
+    minesPlaced = false;
+    setSmiley('normal');
+
+    // Disable all current field buttons so the previous game is ended
+    var allButtons = document.getElementsByClassName('mine');
+    for (var i = 0; i < allButtons.length; i++) {
+        allButtons[i].disabled = true;
+    }
+    updateFlagsDisplay();
+
+    // Reset and start a fresh board with the updated settings
     startGame();
+    // ensure timer and flags show 000 immediately
+    renderTimerDigits(0);
+    updateFlagsDisplay();
 });
 
 document.getElementById("scale").addEventListener("input", function (e) {
@@ -366,6 +434,17 @@ document.addEventListener('pointerup', function () {
 //when button pressed
 field.addEventListener("click", function (e) {
     if (e.target && e.target.className.startsWith("mine") && !e.target.className.includes("flagged")) {
+        // On first click, place mines excluding the clicked cell and neighbors
+        if (!minesPlaced) {
+            var coordsFirst = e.target.id.split("_");
+            var fx = parseInt(coordsFirst[1]);
+            var fy = parseInt(coordsFirst[2]);
+            var excludes = getExcludeNeighbors(fx, fy);
+            placeMines(excludes);
+            // start timer after placement
+            startTimer();
+        }
+
         if (e.isTrusted && !mines[e.target.id]) {
             var audio = new Audio('sounds/click.wav');
             audio.play();

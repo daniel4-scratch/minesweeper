@@ -8,7 +8,7 @@
     <title>Minesweeper</title>
 </head>
 <body>
-    <button id="startBtn">Start Game</button>
+    <button id="startBtn">Update</button>
     <input type="file" id="importFile" accept="application/json" style="display:none" />
 
     <label for="width">Width:</label>
@@ -37,9 +37,17 @@
 
     <div class="window" oncontextmenu="return false;">
         <div class="top">
-            <div class="display" id="flagsDisplay"></div>
+            <div class="display" id="flagsDisplay">
+                <div class="number-0"></div>
+                <div class="number-0"></div>
+                <div class="number-0"></div>
+            </div>
             <div class="smiley" id="smiley" role="button" tabindex="0" style="cursor: pointer;"></div>
-            <div class="display" id="timerDisplay"></div>
+            <div class="display" id="timerDisplay">
+                <div class="number-0"></div>
+                <div class="number-0"></div>
+                <div class="number-0"></div>
+            </div>
         </div>
         <div id="field"></div>
     </div>
