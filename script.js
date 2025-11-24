@@ -359,8 +359,7 @@ field.addEventListener("click", function (e) {
 });
 // right click to flag
 field.addEventListener("contextmenu", function (e) {
-    e.preventDefault();
-    if (e.target && e.target.className.includes("mine")) {
+    if (e.target && e.target.className.includes("mine") && !gameOver && !e.target.disabled) {
         if (e.target.className.includes("flagged")) {
             e.target.className = e.target.className.replace(" flagged", "");
         } else {

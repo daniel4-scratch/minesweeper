@@ -5,6 +5,11 @@
     --cursor: default;
 }
 
+body{
+    background: white;
+    color:black;
+}
+
 .window{
     background-color: #c2c2c2;
     width: fit-content;
@@ -20,6 +25,7 @@
 }
 
 .smiley{
+    cursor: var(--cursor);
     border:none;
     width: calc(26px * var(--scale));
     height: calc(26px * var(--scale));
