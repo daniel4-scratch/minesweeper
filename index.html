@@ -35,8 +35,12 @@
         <option value="bruce">Bruce</option>
     </select>
 
-    <div class="window">
-        <button class="smile" id="smile" style="display: none;"></button>
+    <div class="window" oncontextmenu="return false;">
+        <div class="top">
+            <div class="display" id="flagsDisplay"></div>
+            <div class="smiley" id="smiley" role="button" tabindex="0" style="cursor: pointer;"></div>
+            <div class="display" id="timerDisplay"></div>
+        </div>
         <div id="field"></div>
     </div>
 </body>

@@ -7,6 +7,7 @@
 
 .window{
     background-color: #c2c2c2;
+    width: fit-content;
 }
 
 #field
@@ -18,7 +19,7 @@
     width: fit-content;
 }
 
-.smile{
+.smiley{
     border:none;
     width: calc(26px * var(--scale));
     height: calc(26px * var(--scale));
@@ -30,7 +31,21 @@
 }
 
 /*when mine is pressed change smile to shocked*/
-.smile:active{
+.smiley:active{
+    background-position: calc(-26px * var(--scale)) calc(-55px * var(--scale));
+}
+.smiley.shocked{
+    background-position: calc(-52px * var(--scale)) calc(-55px * var(--scale));
+}
+.smiley.sunglasses{
+    background-position: calc(-104px * var(--scale)) calc(-55px * var(--scale));
+}
+.smiley.dead{
+    background-position: calc(-78px * var(--scale)) calc(-55px * var(--scale));
+}
+
+/* forced pressed state (used by JS) */
+.smiley.pressed{
     background-position: calc(-26px * var(--scale)) calc(-55px * var(--scale));
 }
 
@@ -103,4 +118,59 @@
 .mine.number8{
     background-position: calc(-128px * var(--scale)) calc(-23px * var(--scale));
     cursor: default;
+}
+.top{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: calc(5px * var(--scale));
+    background-color: #c2c2c2;
+    border-bottom: calc(2px * var(--scale)) solid #808080;
+}
+.display{
+    background-color: black;
+    width: min-content;
+    display: flex;
+}
+.display div{
+    width: calc(13px * var(--scale));
+    height: calc(23px * var(--scale));
+    background-size: calc(144px * var(--scale)) auto; /* width of your sprite sheet */
+    background-image: var(--sprite);
+    image-rendering: var(--image-rendering);
+    background-repeat: no-repeat;
+    background-position: calc(0px * var(--scale)) calc(0px * var(--scale));
+}
+.display .number0{
+    background-position: calc(0px * var(--scale)) calc(0px * var(--scale));
+}
+.display .number1{
+    background-position: calc(-13px * var(--scale)) calc(0px * var(--scale));
+}
+.display .number2{
+    background-position: calc(-26px * var(--scale)) calc(0px * var(--scale));
+}
+.display .number3{
+    background-position: calc(-39px * var(--scale)) calc(0px * var(--scale));
+}
+.display .number4{
+    background-position: calc(-52px * var(--scale)) calc(0px * var(--scale));
+}
+.display .number5{
+    background-position: calc(-65px * var(--scale)) calc(0px * var(--scale));
+}
+.display .number6{
+    background-position: calc(-78px * var(--scale)) calc(0px * var(--scale));
+}
+.display .number7{
+    background-position: calc(-91px * var(--scale)) calc(0px * var(--scale));
+}
+.display .number8{
+    background-position: calc(-104px * var(--scale)) calc(0px * var(--scale));
+}
+.display .number9{
+    background-position: calc(-117px * var(--scale)) calc(0px * var(--scale));
+}
+.display .numberNegative{
+    background-position: calc(-130px * var(--scale)) calc(0px * var(--scale));
 }

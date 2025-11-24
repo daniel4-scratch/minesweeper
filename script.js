@@ -1,6 +1,8 @@
 var gridX = 10;
 var gridY = 10;
 var mines = {};
+var gameOver = true;
+var gameWon = false;
 
 // number of mines to place (fixed count)
 var mineCount = 10;
@@ -29,6 +31,9 @@ if (value === "classic" || value === "bruce") {
 
 
 function startGame() {
+    gameOver = false;
+    gameWon = false;
+    setSmiley('normal');
     new Audio('sounds/start.wav').play();
     field.innerHTML = "";
     field.style.gridTemplateRows = `repeat(${gridY}, calc(16px * var(--scale)))`;
@@ -59,8 +64,42 @@ function startGame() {
             placed++;
         }
     }
+    updateFlagsDisplay();
+    startTimer();
     console.log(mines)
 };
+
+function startTimer(){
+    var timerDisplay = document.getElementById("timerDisplay");
+    if (!timerDisplay) return;
+    var seconds = 0;
+    var digits = seconds.toString().padStart(3, '0');
+    timerDisplay.innerHTML = "";
+    for (var i = 0; i < digits.length; i++) {
+        var digit = digits.charAt(i);
+        var digitDiv = document.createElement("div");
+        digitDiv.className = "number" + digit;
+        timerDisplay.appendChild(digitDiv);
+    }
+    if (window.timerInterval) clearInterval(window.timerInterval);
+    window.timerInterval = setInterval(function(){
+        seconds++;
+        var digits = seconds.toString().padStart(3, '0');
+        timerDisplay.innerHTML = "";
+        for (var i = 0; i < digits.length; i++) {
+            var digit = digits.charAt(i);
+            var digitDiv = document.createElement("div");
+            digitDiv.className = "number" + digit;
+            timerDisplay.appendChild(digitDiv);
+        }
+    }, 1000);
+}
+function stopTimer(){
+    if (window.timerInterval) {
+        clearInterval(window.timerInterval);
+        window.timerInterval = null;
+    }
+}
 
 // reveal all connected empty areas and their bordering numbers
 function revealArea(startX, startY) {
@@ -255,6 +294,75 @@ if (importFile) {
         reader.readAsText(file);
     });
 }
+
+// Smiley control helper
+function setSmiley(state) {
+    var smiley = document.getElementById('smiley');
+    if (!smiley) return;
+    smiley.classList.remove('shocked', 'sunglasses', 'dead');
+    if (state === 'shocked') {
+        smiley.classList.add('shocked');
+    } else if (state === 'sunglasses') {
+        smiley.classList.add('sunglasses');
+    } else if (state === 'dead') {
+        smiley.classList.add('dead');
+    } else {
+        // normal: no extra class
+    }
+}
+
+// clicking the smiley restarts the game
+var smileyEl = document.getElementById('smiley');
+if (smileyEl) {
+    // pointer interactions: show pressed state while held
+    smileyEl.addEventListener('pointerdown', function (e) {
+        // only handle primary button
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        e.preventDefault();
+        smileyEl.classList.add('pressed');
+    });
+    smileyEl.addEventListener('pointerup', function (e) {
+        smileyEl.classList.remove('pressed');
+    });
+    smileyEl.addEventListener('pointercancel', function () {
+        smileyEl.classList.remove('pressed');
+    });
+    // click activates restart
+    smileyEl.addEventListener('click', function () {
+        startGame();
+    });
+    // allow keyboard activation with visual pressed state
+    smileyEl.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            smileyEl.classList.add('pressed');
+        }
+    });
+    smileyEl.addEventListener('keyup', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            smileyEl.classList.remove('pressed');
+            startGame();
+        }
+    });
+}
+
+// show shocked while pressing a cell; restore on release
+document.addEventListener('pointerdown', function (e) {
+    if (e.target && e.target.className && typeof e.target.className === 'string' && e.target.className.startsWith('mine')) {
+        if (!gameOver && !e.target.className.includes('flagged')) {
+            setSmiley('shocked');
+        }
+    }
+});
+document.addEventListener('pointerup', function () {
+    if (gameOver) {
+        if (gameWon) setSmiley('sunglasses');
+        else setSmiley('dead');
+    } else {
+        setSmiley('normal');
+    }
+});
 //when button pressed
 field.addEventListener("click", function (e) {
     if (e.target && e.target.className.startsWith("mine") && !e.target.className.includes("flagged")) {
@@ -263,6 +371,10 @@ field.addEventListener("click", function (e) {
             audio.play();
         }
         if (mines[e.target.id]) {
+            stopTimer();
+            gameOver = true;
+            gameWon = false;
+            setSmiley('dead');
             var audio = new Audio('sounds/lose_minesweeper.wav');
             audio.play();
             e.target.className += " hit";
@@ -319,7 +431,11 @@ field.addEventListener("click", function (e) {
                 mineButton.className += " flagged";
             }
         }
-
+        updateFlagsDisplay();
+        stopTimer();
+        gameOver = true;
+        gameWon = true;
+        setSmiley('sunglasses');
         setTimeout(function () {
             audio = new Audio('sounds/win.wav');
             audio.play();
@@ -329,12 +445,46 @@ field.addEventListener("click", function (e) {
 });
 // right click to flag
 field.addEventListener("contextmenu", function (e) {
-    if (e.target && e.target.className.startsWith("mine")) {
-        e.preventDefault();
+    e.preventDefault();
+    if (e.target && e.target.className.includes("mine")) {
         if (e.target.className.includes("flagged")) {
             e.target.className = e.target.className.replace(" flagged", "");
         } else {
             e.target.className += " flagged";
         }
+        if(!gameOver){
+            updateFlagsDisplay();
+        }
     }
 });
+
+function updateFlagsDisplay() {
+    var flagsDisplay = document.getElementById("flagsDisplay");
+    if (!flagsDisplay) return;
+    //count flags
+    var allButtons = document.getElementsByClassName("mine");
+    var flagCount = 0;
+    for (var i = 0; i < allButtons.length; i++) {
+        var btn = allButtons[i];
+        if (btn.className.includes("flagged")) {
+            flagCount++;
+        }
+    }
+    var parseCount = toString(mineCount - flagCount);
+    //for each digit, create a div with class numberX
+    flagsDisplay.innerHTML = "";
+    var digits = (mineCount - flagCount).toString().padStart(3, '0');
+    for (var i = 0; i < digits.length; i++) {
+        if (digits.charAt(i) === '-') {
+            var minusDiv = document.createElement("div");
+            minusDiv.className = "numberNegative";
+            flagsDisplay.appendChild(minusDiv);
+            continue;
+        }
+        var digit = digits.charAt(i);
+        var digitDiv = document.createElement("div");
+        digitDiv.className = "number" + digit;
+        flagsDisplay.appendChild(digitDiv);
+    }
+
+}
