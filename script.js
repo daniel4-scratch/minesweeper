@@ -101,25 +101,11 @@ function startTimer(){
     var timerDisplay = document.getElementById("timerDisplay");
     if (!timerDisplay) return;
     var seconds = 0;
-    var digits = seconds.toString().padStart(3, '0');
-    timerDisplay.innerHTML = "";
-    for (var i = 0; i < digits.length; i++) {
-        var digit = digits.charAt(i);
-        var digitDiv = document.createElement("div");
-        digitDiv.className = "number" + digit;
-        timerDisplay.appendChild(digitDiv);
-    }
+    renderTimerDigits(seconds);
     if (window.timerInterval) clearInterval(window.timerInterval);
     window.timerInterval = setInterval(function(){
         seconds++;
-        var digits = seconds.toString().padStart(3, '0');
-        timerDisplay.innerHTML = "";
-        for (var i = 0; i < digits.length; i++) {
-            var digit = digits.charAt(i);
-            var digitDiv = document.createElement("div");
-            digitDiv.className = "number" + digit;
-            timerDisplay.appendChild(digitDiv);
-        }
+        renderTimerDigits(seconds);
     }, 1000);
 }
 function stopTimer(){
@@ -229,6 +215,34 @@ document.getElementById("startBtn").addEventListener("click", function () {
     updateFlagsDisplay();
 });
 
+ // Apply settings from inputs but do not automatically start a new board.
+    var w = parseInt(document.getElementById('width').value);
+    var h = parseInt(document.getElementById('height').value);
+    var m = parseInt(document.getElementById('mineCount').value);
+    if (!isNaN(w) && w > 0) gridX = w;
+    if (!isNaN(h) && h > 0) gridY = h;
+    if (!isNaN(m) && m >= 0) mineCount = m;
+
+    // End any running game: stop timer and mark game over
+    stopTimer();
+    gameOver = true;
+    gameWon = false;
+    minesPlaced = false;
+    setSmiley('normal');
+
+    // Disable all current field buttons so the previous game is ended
+    var allButtons = document.getElementsByClassName('mine');
+    for (var i = 0; i < allButtons.length; i++) {
+        allButtons[i].disabled = true;
+    }
+    updateFlagsDisplay();
+
+    // Reset and start a fresh board with the updated settings
+    startGame();
+    // ensure timer and flags show 000 immediately
+    renderTimerDigits(0);
+    updateFlagsDisplay();
+
 document.getElementById("scale").addEventListener("input", function (e) {
     var scale = parseFloat(e.target.value);
     //edit --scale in :root
@@ -337,6 +351,15 @@ function importGameFromObject(data) {
             btn.disabled = !!c.disabled;
         });
     }
+    // update html inputs to match imported settings
+    //update html inputs to match imported settings
+    document.getElementById('width').value = gridX;
+    document.getElementById('height').value = gridY;
+    document.getElementById('mineCount').value = mineCount;
+
+    updateFlagsDisplay();
+    // reset timer display to 000 (timer starts on first click)
+    renderTimerDigits(0);
 }
 
 // Wire export/import UI elements
