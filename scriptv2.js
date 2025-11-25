@@ -277,3 +277,15 @@ themeSelect.addEventListener("change", function () {
         document.documentElement.style.setProperty('--sprite', "url('brucesweeper.png')");
     }
 });
+
+// page query ?theme=bruce
+const urlParams = new URLSearchParams(window.location.search);
+const themeParam = urlParams.get('theme');
+if (themeParam) {
+    themeSelect.value = themeParam;
+    if (themeParam === "classic") {
+        document.documentElement.style.setProperty('--sprite', "url('sprite.png')");
+    } else if (themeParam === "bruce") {
+        document.documentElement.style.setProperty('--sprite', "url('brucesweeper.png')");
+    }
+}
