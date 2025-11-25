@@ -43,7 +43,7 @@ body{
 .smiley.shocked{
     background-position: calc(-52px * var(--scale)) calc(-55px * var(--scale));
 }
-.smiley.sunglasses{
+.smiley.win{
     background-position: calc(-104px * var(--scale)) calc(-55px * var(--scale));
 }
 .smiley.dead{
