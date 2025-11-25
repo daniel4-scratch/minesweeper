@@ -137,22 +137,41 @@ function clickTile(x,y) {
     //if mine game over
     //reval number
     //if hit
+
+    //lose condition
     if (mines[`${x},${y}`]) {
         gameOver = true;
         smiley.className = "smiley dead";
         stopTimer(timer);
         audios.explode.play();
+
+        // reveal all mines, keep correct flags
         for (const key in mines) {
             const [mx, my] = key.split(",").map(Number);
-            const index = my * parseInt(widthInput.value) + mx;
+            const index = my * gridX + mx;
             const mineTile = document.getElementById(`tile-${index}`);
-            //if the mine that was clicked
+            if (!mineTile) continue;
             if (mx === x && my === y) {
                 mineTile.className = "mine hit";
+            } else if (mineTile.classList.contains("flagged")) {
+                mineTile.className = "mine flagged";
             } else {
                 mineTile.className = "mine revealed";
             }
         }
+
+        // reveal false flags
+        const flaggedTiles = document.querySelectorAll(".flagged");
+        flaggedTiles.forEach(ft => {
+            const id = ft.id;
+            const idx = parseInt(id.split("-")[1]);
+            const fx = idx % gridX;
+            const fy = Math.floor(idx / gridX);
+            if (!mines[`${fx},${fy}`]) {
+                ft.className = "mine falseflag";
+            }
+        });
+
         return;
     }else{
         revealArea(x, y);
