@@ -159,9 +159,13 @@ function clickTile(x,y) {
     }
     //check win condition: make sure all non-mine tiles are revealed
     let revealedCount = 0;
-    for(let i = 0; i < gridX * gridY; i++){
+    for (let i = 0; i < gridX * gridY; i++) {
         const tile = document.getElementById(`tile-${i}`);
-        if(tile.className !== "mine"){
+        if (!tile) continue;
+        const cls = tile.className;
+        // Only count tiles that have been revealed: "empty" or "numberN".
+        // Don't count flagged or unrevealed "mine" tiles.
+        if (cls.includes('empty') || cls.includes('number')) {
             revealedCount++;
         }
     }
