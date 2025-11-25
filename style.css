@@ -8,11 +8,13 @@
 body{
     background: white;
     color:black;
+    text-align: center;
 }
 
 .window{
     background-color: #c2c2c2;
     width: fit-content;
+    margin: auto;;
 }
 
 #field
