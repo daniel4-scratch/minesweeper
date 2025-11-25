@@ -32,6 +32,10 @@ var timer = null;
 
 //generate tiles
 function generateField() {
+    if (timer) {
+        stopTimer(timer);
+    }
+    timer = null;
     gameStarted = false;
     gameOver = false;
     smiley.className = "smiley";
@@ -70,8 +74,12 @@ function startGame(x, y) {
     while (Object.keys(mines).length < mineCountValue) {
         let mx = Math.floor(Math.random() * gridX);
         let my = Math.floor(Math.random() * gridY);
-        //prevent mine at x,y
-        if ((mx === x && my === y) || mines[`${mx},${my}`]) {
+        // prevent mines in the initial 3x3 area (including the clicked tile)
+        if (Math.abs(mx - x) <= 1 && Math.abs(my - y) <= 1) {
+            continue;
+        }
+        // avoid duplicate mine positions
+        if (mines[`${mx},${my}`]) {
             continue;
         }
         mines[`${mx},${my}`] = true;
