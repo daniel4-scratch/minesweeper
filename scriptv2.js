@@ -12,6 +12,7 @@ const scaleInput = document.getElementById("scale");
 const smoothRendering = document.getElementById("imageRendering");
 const pointerCursor = document.getElementById("cursorEvents");
 const themeSelect = document.getElementById("theme");
+const soundToggle = document.getElementById("sound");
 
 var gridX = 0;
 var gridY = 0;
@@ -298,6 +299,18 @@ themeSelect.addEventListener("change", function () {
         document.documentElement.style.setProperty('--sprite', "url('sprite.png')");
     } else if (this.value === "bruce") {
         document.documentElement.style.setProperty('--sprite', "url('brucesweeper.png')");
+    }
+});
+
+soundToggle.addEventListener("change", function () {
+    if (this.checked) {
+        for (const key in audios) {
+            audios[key].muted = false;
+        }
+    } else {
+        for (const key in audios) {
+            audios[key].muted = true;
+        }
     }
 });
 
