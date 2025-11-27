@@ -250,7 +250,11 @@ function updateDisplay(id, int){
     for (var i = 0; i < digits.length; i++) {
         var digit = digits.charAt(i);
         var digitDiv = document.createElement("div");
-        digitDiv.className = "number" + digit;
+        if (digit === '-') {
+            digitDiv.className = "numberNegative";
+        } else {
+            digitDiv.className = "number" + digit;
+        }
         display.appendChild(digitDiv);
     }
 }
