@@ -300,9 +300,9 @@ pointerCursor.addEventListener("change", function () {
 themeSelect.addEventListener("change", function () {
     console.log(this.value);
     if (this.value === "classic") {
-        document.documentElement.style.setProperty('--sprite', "url('sprite.png')");
+        document.documentElement.style.setProperty('--sprite', "url('images/sprite.png')");
     } else if (this.value === "bruce") {
-        document.documentElement.style.setProperty('--sprite', "url('brucesweeper.png')");
+        document.documentElement.style.setProperty('--sprite', "url('images/brucesweeper.png')");
     }
 });
 

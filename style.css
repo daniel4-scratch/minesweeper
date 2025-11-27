@@ -1,6 +1,6 @@
 :root{
     --scale:2;
-    --sprite: url('sprite.png');
+    --sprite: url('images/sprite.png');
     --image-rendering: pixelated;
     --cursor: default;
 }
