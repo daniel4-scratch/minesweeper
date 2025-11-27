@@ -1,405 +1,331 @@
-var gridX = 10;
-var gridY = 10;
-var mines = {};
-var gameOver = true;
-var gameWon = false;
-
-// number of mines to place (fixed count)
-var mineCount = 10;
-
 const field = document.getElementById("field");
 
-const params = new Proxy(new URLSearchParams(window.location.search), {
-  get: (searchParams, prop) => searchParams.get(prop),
+// field properties
+const update = document.getElementById("startBtn");
+const widthInput = document.getElementById("width");
+const heightInput = document.getElementById("height");
+const mineCount = document.getElementById("mineCount");
+const smiley = document.getElementById("smiley");
+
+// display properties
+const scaleInput = document.getElementById("scale");
+const smoothRendering = document.getElementById("imageRendering");
+const pointerCursor = document.getElementById("cursorEvents");
+const themeSelect = document.getElementById("theme");
+const soundToggle = document.getElementById("sound");
+
+var gridX = 0;
+var gridY = 0;
+
+var mines = {};
+var gameStarted = false;
+var gameOver = false;
+
+var audios = {
+    click: new Audio('sounds/click.wav'),
+    explode: new Audio('sounds/lose_minesweeper.wav'),
+    win: new Audio('sounds/win.wav'),
+    start: new Audio('sounds/start.wav')
+}
+
+var timer = null;
+
+
+//generate tiles
+function generateField() {
+    if (timer) {
+        stopTimer(timer);
+    }
+    timer = null;
+    gameStarted = false;
+    gameOver = false;
+    smiley.className = "smiley";
+    mines = {};
+    gridX = parseInt(widthInput.value);
+    gridY = parseInt(heightInput.value);
+    field.innerHTML = "";
+    field.style.gridTemplateColumns = `repeat(${gridX}, calc(16px * var(--scale)))`;
+    field.style.gridTemplateRows = `repeat(${gridY}, calc(16px * var(--scale)))`;
+    for (let i = 0; i < gridX * gridY; i++) {
+        const button = document.createElement("button");
+        button.className = "mine";
+        button.id = `tile-${i}`;
+        button.addEventListener("click", function () {
+            if (!gameStarted) {
+                const x = i % gridX;
+                const y = Math.floor(i / gridX);
+                startGame(x, y);
+            }
+        });
+        field.appendChild(button);
+    }
+    updateDisplay("flagsDisplay", parseInt(mineCount.value));
+    updateDisplay("timerDisplay", 0);
+}
+
+update.addEventListener("click", generateField);
+smiley.addEventListener("click", generateField);
+
+//startgame x,y inintal position to prevent first click mine
+function startGame(x, y) {
+    //genenerate mines blank space at x,y
+    gameStarted = true;
+    var mineCountValue = parseInt(mineCount.value);
+    mines = {};
+    while (Object.keys(mines).length < mineCountValue) {
+        let mx = Math.floor(Math.random() * gridX);
+        let my = Math.floor(Math.random() * gridY);
+        // prevent mines in the initial 3x3 area (including the clicked tile)
+        if (Math.abs(mx - x) <= 1 && Math.abs(my - y) <= 1) {
+            continue;
+        }
+        // avoid duplicate mine positions
+        if (mines[`${mx},${my}`]) {
+            continue;
+        }
+        mines[`${mx},${my}`] = true;
+    }
+    console.log(mines);
+    audios.start.play();
+    timer = startTimer();
+
+}
+
+
+field.addEventListener("click", function (e) {
+    if (gameOver) return;
+    if (e.target.className === "mine") {
+        const id = e.target.id;
+        const index = parseInt(id.split("-")[1]);
+        const x = index % gridX;
+        const y = Math.floor(index / gridX);
+        clickTile(x, y);
+    }
+});
+field.addEventListener("mousedown", function (e) {
+    if (gameOver) return;
+    if (gameStarted){
+        smiley.className = "smiley shocked";
+    }
+}
+);
+field.addEventListener("mouseup", function (e) {
+    if (gameOver) return;
+    if (gameStarted){
+        smiley.className = "smiley";
+    }
 });
 
-let value = params.theme;
-console.log("Theme param:", value);
-if (value === "classic" || value === "bruce") {
-    document.getElementById("theme").value = value;
-    document.getElementById("theme").dispatchEvent(new Event('change'));
-    //apply theme
-    if (value === "classic") {
-        document.documentElement.style.setProperty('--sprite', "url('sprite.png')");
-        document.title = "Minesweeper";
-    } else if (value === "bruce") {
-        document.documentElement.style.setProperty('--sprite', "url('brucesweeper.png')");
-        document.title = "Brucesweeper";
-    }
-    
-}
-
-
-function startGame() {
-    gameOver = false;
-    gameWon = false;
-    setSmiley('normal');
-    new Audio('sounds/start.wav').play();
-    field.innerHTML = "";
-    field.style.gridTemplateRows = `repeat(${gridY}, calc(16px * var(--scale)))`;
-    field.style.gridTemplateColumns = `repeat(${gridX}, calc(16px * var(--scale)))`;
-    mines = {};
-    // create grid buttons first
-    for (var i = 0; i < gridY; i++) {
-        for (var j = 0; j < gridX; j++) {
-            var button = document.createElement("button");
-            button.id = "mine_" + i + "_" + j;
-            button.className = "mine";
-            field.appendChild(button);
+field.addEventListener("contextmenu", function (e) {
+    e.preventDefault();
+    if (gameOver || !gameStarted) return;
+    if (e.target.className === "mine") {
+        if (e.target.classList.contains("flagged")) {
+            e.target.classList.remove("flagged");
+        } else {
+            e.target.classList.add("flagged");
         }
+    }else if(e.target.classList.contains("flagged")){
+        e.target.classList.remove("flagged");
     }
+    updateDisplay("flagsDisplay", Object.keys(mines).length - document.querySelectorAll(".flagged").length);
+});
 
-    // place an exact number of mines randomly
-    var totalCells = gridX * gridY;
-    // ensure at least one non-mine cell remains
-    var placeCount = Math.max(0, Math.min(mineCount, totalCells - 1));
-    var placed = 0;
-    while (placed < placeCount) {
-        var idx = Math.floor(Math.random() * totalCells);
-        var rx = Math.floor(idx / gridX);
-        var ry = idx % gridX;
-        var id = "mine_" + rx + "_" + ry;
-        if (!mines[id]) {
-            mines[id] = true;
-            placed++;
-        }
-    }
-    updateFlagsDisplay();
-    startTimer();
-    console.log(mines)
-};
+function clickTile(x,y) {
+    if (gameOver) return;
+    //when tile clicked
+    //if blank reveal adjacent tiles
+    //if mine game over
+    //reval number
+    //if hit
 
-function startTimer(){
-    var timerDisplay = document.getElementById("timerDisplay");
-    if (!timerDisplay) return;
-    var seconds = 0;
-    var digits = seconds.toString().padStart(3, '0');
-    timerDisplay.innerHTML = "";
-    for (var i = 0; i < digits.length; i++) {
-        var digit = digits.charAt(i);
-        var digitDiv = document.createElement("div");
-        digitDiv.className = "number" + digit;
-        timerDisplay.appendChild(digitDiv);
-    }
-    if (window.timerInterval) clearInterval(window.timerInterval);
-    window.timerInterval = setInterval(function(){
-        seconds++;
-        var digits = seconds.toString().padStart(3, '0');
-        timerDisplay.innerHTML = "";
-        for (var i = 0; i < digits.length; i++) {
-            var digit = digits.charAt(i);
-            var digitDiv = document.createElement("div");
-            digitDiv.className = "number" + digit;
-            timerDisplay.appendChild(digitDiv);
-        }
-    }, 1000);
-}
-function stopTimer(){
-    if (window.timerInterval) {
-        clearInterval(window.timerInterval);
-        window.timerInterval = null;
-    }
-}
+    //lose condition
+    if (mines[`${x},${y}`]) {
+        gameOver = true;
+        smiley.className = "smiley dead";
+        stopTimer(timer);
+        audios.explode.play();
 
-// reveal all connected empty areas and their bordering numbers
-function revealArea(startX, startY) {
-    var startId = "mine_" + startX + "_" + startY;
-    var startBtn = document.getElementById(startId);
-    if (!startBtn || startBtn.disabled || startBtn.className.includes("flagged")) return;
-
-    var visited = {};
-    var queue = [{ x: startX, y: startY }];
-    visited[startId] = true;
-
-    while (queue.length) {
-        var cur = queue.shift();
-        var bx = cur.x;
-        var by = cur.y;
-        var id = "mine_" + bx + "_" + by;
-        var btn = document.getElementById(id);
-        if (!btn || btn.disabled) continue;
-
-        // count neighboring mines
-        var mineCount = 0;
-        for (var i = -1; i <= 1; i++) {
-            for (var j = -1; j <= 1; j++) {
-                if (i === 0 && j === 0) continue;
-                var checkId = "mine_" + (bx + i) + "_" + (by + j);
-                if (mines[checkId]) mineCount++;
+        // reveal all mines, keep correct flags
+        for (const key in mines) {
+            const [mx, my] = key.split(",").map(Number);
+            const index = my * gridX + mx;
+            const mineTile = document.getElementById(`tile-${index}`);
+            if (!mineTile) continue;
+            if (mx === x && my === y) {
+                mineTile.className = "mine hit";
+            } else if (mineTile.classList.contains("flagged")) {
+                mineTile.className = "mine flagged";
+            } else {
+                mineTile.className = "mine revealed";
             }
         }
 
-        // reveal this button
-        if (mineCount > 0) {
-            btn.className += " number" + mineCount;
-            btn.disabled = true;
-            // do not expand from numbered cells
-        } else {
-            btn.className += " empty";
-            btn.disabled = true;
-            // expand neighbors
-            for (var i = -1; i <= 1; i++) {
-                for (var j = -1; j <= 1; j++) {
-                    if (i === 0 && j === 0) continue;
-                    var nx = bx + i;
-                    var ny = by + j;
-                    var nid = "mine_" + nx + "_" + ny;
-                    if (visited[nid]) continue;
-                    var nbtn = document.getElementById(nid);
-                    if (nbtn && !nbtn.disabled && !nbtn.className.includes("flagged")) {
-                        visited[nid] = true;
-                        queue.push({ x: nx, y: ny });
-                    }
+        // reveal false flags
+        const flaggedTiles = document.querySelectorAll(".flagged");
+        flaggedTiles.forEach(ft => {
+            const id = ft.id;
+            const idx = parseInt(id.split("-")[1]);
+            const fx = idx % gridX;
+            const fy = Math.floor(idx / gridX);
+            if (!mines[`${fx},${fy}`]) {
+                ft.className = "mine falseflag";
+            }
+        });
+
+        return;
+    }else{
+        revealArea(x, y);
+    }
+    //check win condition: make sure all non-mine tiles are revealed
+    let revealedCount = 0;
+    for (let i = 0; i < gridX * gridY; i++) {
+        const tile = document.getElementById(`tile-${i}`);
+        if (!tile) continue;
+        const cls = tile.className;
+        // Only count tiles that have been revealed: "empty" or "numberN".
+        // Don't count flagged or unrevealed "mine" tiles.
+        if (cls.includes('empty') || cls.includes('number')) {
+            revealedCount++;
+        }
+    }
+    if(revealedCount === gridX * gridY - Object.keys(mines).length){
+        gameOver = true;
+        smiley.className = "smiley win";
+        audios.win.play();
+        stopTimer(timer);
+        //flag all mines
+        for (const key in mines) {
+            const [mx, my] = key.split(",").map(Number);
+            const index = my * parseInt(widthInput.value) + mx;
+            const mineTile = document.getElementById(`tile-${index}`);
+            mineTile.className = "mine flagged";
+        }
+    }
+    audios.click.play();
+}
+
+function revealArea(x, y){
+    const index = y * gridX + x;
+    const tile = document.getElementById(`tile-${index}`);
+    if(tile.className !== "mine"){
+        return; //already revealed
+    }
+    //count adjacent mines
+    let mineCount = 0;
+    for(let dx = -1; dx <= 1; dx++){
+        for(let dy = -1; dy <= 1; dy++){
+            if(dx === 0 && dy === 0) continue;
+            const nx = x + dx;
+            const ny = y + dy;
+            if(nx >= 0 && nx < gridX && ny >= 0 && ny < gridY){
+                if(mines[`${nx},${ny}`]){
+                    mineCount++;
+                }
+            }
+        }
+    }
+    tile.className = "mine empty";
+    if(mineCount > 0){
+        tile.className = `mine number${mineCount}`;
+    }else{
+        //reveal adjacent tiles
+        for(let dx = -1; dx <= 1; dx++){
+            for(let dy = -1; dy <= 1; dy++){
+                if(dx === 0 && dy === 0) continue;
+                const nx = x + dx;
+                const ny = y + dy;
+                if(nx >= 0 && nx < gridX && ny >= 0 && ny < gridY){
+                    revealArea(nx, ny);
                 }
             }
         }
     }
 }
 
+function updateDisplay(id, int){
+    const display = document.getElementById(id);
+    var digits = int.toString().padStart(3, '0');
+    display.innerHTML = "";
+    for (var i = 0; i < digits.length; i++) {
+        var digit = digits.charAt(i);
+        var digitDiv = document.createElement("div");
+        if (digit === '-') {
+            digitDiv.className = "numberNegative";
+        } else {
+            digitDiv.className = "number" + digit;
+        }
+        display.appendChild(digitDiv);
+    }
+}
 
-document.getElementById("startBtn").addEventListener("click", function () {
-    startGame();
-});
+function startTimer(){
+    let seconds = 0;
+    return setInterval(function(){
+        if(gameOver || !gameStarted){
+            clearInterval(this);
+            return;
+        }
+        seconds++;
+        updateDisplay("timerDisplay", seconds);
+    }, 1000);
+}
 
-document.getElementById("scale").addEventListener("input", function (e) {
-    var scale = parseFloat(e.target.value);
-    //edit --scale in :root
+function stopTimer(interval){
+    clearInterval(interval);
+}
+
+generateField();
+
+//display listeners
+scaleInput.addEventListener("input", function (e) {
+    const scale = parseFloat(e.target.value);
     document.documentElement.style.setProperty('--scale', scale);
 });
-document.getElementById("imageRendering").addEventListener("change", function (e) {
-    var smooth = e.target.checked;
-    if (smooth) {
+
+smoothRendering.addEventListener("change", function () {
+    if (this.checked) {
         document.documentElement.style.setProperty('--image-rendering', 'smooth');
     } else {
         document.documentElement.style.setProperty('--image-rendering', 'pixelated');
     }
 });
-document.getElementById("cursorEvents").addEventListener("change", function (e) {
-    var pointer = e.target.checked;
-    if (pointer) {
+pointerCursor.addEventListener("change", function () {
+    if (this.checked) {
         document.documentElement.style.setProperty('--cursor', 'pointer');
     } else {
         document.documentElement.style.setProperty('--cursor', 'default');
     }
 });
-
-// mine count input
-var mineCountInput = document.getElementById("mineCount");
-if (mineCountInput) {
-    mineCountInput.addEventListener("input", function (e) {
-        var v = parseInt(e.target.value);
-        if (!isNaN(v)) mineCount = v;
-    });
-}
-document.getElementById("width").addEventListener("input", function (e) {
-    gridX = parseInt(e.target.value);
-});
-document.getElementById("height").addEventListener("input", function (e) {
-    gridY = parseInt(e.target.value);
-});
-//select element
-document.getElementById("theme").addEventListener("change", function () {
+themeSelect.addEventListener("change", function () {
+    console.log(this.value);
     if (this.value === "classic") {
         document.documentElement.style.setProperty('--sprite', "url('sprite.png')");
-        document.title = "Minesweeper";
     } else if (this.value === "bruce") {
         document.documentElement.style.setProperty('--sprite', "url('brucesweeper.png')");
-        document.title = "Brucesweeper";
     }
-
 });
 
-// Smiley control helper
-function setSmiley(state) {
-    var smiley = document.getElementById('smiley');
-    if (!smiley) return;
-    smiley.classList.remove('shocked', 'sunglasses', 'dead');
-    if (state === 'shocked') {
-        smiley.classList.add('shocked');
-    } else if (state === 'sunglasses') {
-        smiley.classList.add('sunglasses');
-    } else if (state === 'dead') {
-        smiley.classList.add('dead');
+soundToggle.addEventListener("change", function () {
+    if (this.checked) {
+        for (const key in audios) {
+            audios[key].muted = false;
+        }
     } else {
-        // normal: no extra class
+        for (const key in audios) {
+            audios[key].muted = true;
+        }
+    }
+});
+
+// page query ?theme=bruce
+const urlParams = new URLSearchParams(window.location.search);
+const themeParam = urlParams.get('theme');
+if (themeParam) {
+    themeSelect.value = themeParam;
+    if (themeParam === "classic") {
+        document.documentElement.style.setProperty('--sprite', "url('sprite.png')");
+    } else if (themeParam === "bruce") {
+        document.documentElement.style.setProperty('--sprite', "url('brucesweeper.png')");
     }
 }
-
-// clicking the smiley restarts the game
-var smileyEl = document.getElementById('smiley');
-if (smileyEl) {
-    // pointer interactions: show pressed state while held
-    smileyEl.addEventListener('pointerdown', function (e) {
-        // only handle primary button
-        if (e.pointerType === 'mouse' && e.button !== 0) return;
-        e.preventDefault();
-        smileyEl.classList.add('pressed');
-    });
-    smileyEl.addEventListener('pointerup', function (e) {
-        smileyEl.classList.remove('pressed');
-    });
-    smileyEl.addEventListener('pointercancel', function () {
-        smileyEl.classList.remove('pressed');
-    });
-    // click activates restart
-    smileyEl.addEventListener('click', function () {
-        startGame();
-    });
-    // allow keyboard activation with visual pressed state
-    smileyEl.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            smileyEl.classList.add('pressed');
-        }
-    });
-    smileyEl.addEventListener('keyup', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            smileyEl.classList.remove('pressed');
-            startGame();
-        }
-    });
-}
-
-// show shocked while pressing a cell; restore on release
-document.addEventListener('pointerdown', function (e) {
-    if (e.target && e.target.className && typeof e.target.className === 'string' && e.target.className.startsWith('mine')) {
-        if (!gameOver && !e.target.className.includes('flagged')) {
-            setSmiley('shocked');
-        }
-    }
-});
-document.addEventListener('pointerup', function () {
-    if (gameOver) {
-        if (gameWon) setSmiley('sunglasses');
-        else setSmiley('dead');
-    } else {
-        setSmiley('normal');
-    }
-});
-//when button pressed
-field.addEventListener("click", function (e) {
-    if (e.target && e.target.className.startsWith("mine") && !e.target.className.includes("flagged")) {
-        if (e.isTrusted && !mines[e.target.id]) {
-            var audio = new Audio('sounds/click.wav');
-            audio.play();
-        }
-        if (mines[e.target.id]) {
-            stopTimer();
-            gameOver = true;
-            gameWon = false;
-            setSmiley('dead');
-            var audio = new Audio('sounds/lose_minesweeper.wav');
-            audio.play();
-            e.target.className += " hit";
-            //disable all buttons
-            var allButtons = document.getElementsByClassName("mine");
-            for (var i = 0; i < allButtons.length; i++) {
-                allButtons[i].disabled = true;
-            }
-            for (var key in mines) {
-                var mineButton = document.getElementById(key);
-                if (mineButton && !mineButton.className.includes("flagged") && key !== e.target.id) {
-                    mineButton.className += " revealed";
-                }
-            }
-            //every false flagged button
-            var allButtons = document.getElementsByClassName("mine");
-            for (var i = 0; i < allButtons.length; i++) {
-                var btn = allButtons[i];
-                if (!mines[btn.id] && btn.className.includes("flagged")) {
-                    btn.className += " falseflag";
-                }
-            }
-
-        } else {
-            // reveal using BFS flood-fill to make sure all contiguous empty
-            // areas and their border numbers get revealed.
-            var coords = e.target.id.split("_");
-            var x = parseInt(coords[1]);
-            var y = parseInt(coords[2]);
-            revealArea(x, y);
-        }
-    }
-    // win condition; check if every empty slot is revealed
-    var allButtons = document.getElementsByClassName("mine");
-    var allRevealed = true;
-    for (var i = 0; i < allButtons.length; i++) {
-        var btn = allButtons[i];
-        if (!mines[btn.id]) {
-            if (!btn.className.includes("empty") && !/number\d/.test(btn.className)) {
-                allRevealed = false;
-                break;
-            }
-        }
-    }
-    if (allRevealed) {
-        var allButtons = document.getElementsByClassName("mine");
-        for (var i = 0; i < allButtons.length; i++) {
-            allButtons[i].disabled = true;
-        }
-        //flag all unflagged mines
-        for (var key in mines) {
-            var mineButton = document.getElementById(key);
-            if (mineButton && !mineButton.className.includes("flagged")) {
-                mineButton.className += " flagged";
-            }
-        }
-        updateFlagsDisplay();
-        stopTimer();
-        gameOver = true;
-        gameWon = true;
-        setSmiley('sunglasses');
-        setTimeout(function () {
-            audio = new Audio('sounds/win.wav');
-            audio.play();
-        }, 0);
-    }
-
-});
-// right click to flag
-field.addEventListener("contextmenu", function (e) {
-    if (e.target && e.target.className.includes("mine") && !gameOver && !e.target.disabled) {
-        if (e.target.className.includes("flagged")) {
-            e.target.className = e.target.className.replace(" flagged", "");
-        } else {
-            e.target.className += " flagged";
-        }
-        if(!gameOver){
-            updateFlagsDisplay();
-        }
-    }
-});
-
-function updateFlagsDisplay() {
-    var flagsDisplay = document.getElementById("flagsDisplay");
-    if (!flagsDisplay) return;
-    //count flags
-    var allButtons = document.getElementsByClassName("mine");
-    var flagCount = 0;
-    for (var i = 0; i < allButtons.length; i++) {
-        var btn = allButtons[i];
-        if (btn.className.includes("flagged")) {
-            flagCount++;
-        }
-    }
-    var parseCount = toString(mineCount - flagCount);
-    //for each digit, create a div with class numberX
-    flagsDisplay.innerHTML = "";
-    var digits = (mineCount - flagCount).toString().padStart(3, '0');
-    for (var i = 0; i < digits.length; i++) {
-        if (digits.charAt(i) === '-') {
-            var minusDiv = document.createElement("div");
-            minusDiv.className = "numberNegative";
-            flagsDisplay.appendChild(minusDiv);
-            continue;
-        }
-        var digit = digits.charAt(i);
-        var digitDiv = document.createElement("div");
-        digitDiv.className = "number" + digit;
-        flagsDisplay.appendChild(digitDiv);
-    }
-
-}
-
-startGame();
