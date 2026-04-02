@@ -324,8 +324,8 @@ const themeParam = urlParams.get('theme');
 if (themeParam) {
     themeSelect.value = themeParam;
     if (themeParam === "classic") {
-        document.documentElement.style.setProperty('--sprite', "url('sprite.png')");
+        document.documentElement.style.setProperty('--sprite', "url('images/sprite.png')");
     } else if (themeParam === "bruce") {
-        document.documentElement.style.setProperty('--sprite', "url('brucesweeper.png')");
+        document.documentElement.style.setProperty('--sprite', "url('images/brucesweeper.png')");
     }
 }
